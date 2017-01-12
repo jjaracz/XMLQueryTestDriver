@@ -5,5 +5,6 @@ import 'package:xml_query_test_driver/xml_query_test_driver.dart';
 
 main() {
   var awesome = new Catalog();
+  awesome.setup("asdf");
   awesome.printTestCases();
 }

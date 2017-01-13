@@ -5,6 +5,7 @@ import 'package:xml/xml.dart' as xml;
 class Catalog {
 
   List<String> tests = [];
+  var contentRootPath = 'res/qt3_1_0/';
 
   ///xml list of required tests in the form of
   ///<tests><set>[set name]</set>...</tests>
@@ -27,9 +28,19 @@ class Catalog {
    }
 
    Future printTestCases() async {
-     var contentRootPath = 'res/qt3_1_0/';
-     var contents = await new File('${contentRootPath}catalog.xml').readAsString();
-     print(contents);
+
+     var strXml = await new File('${contentRootPath}catalog.xml').readAsString();
+     var doc = xml.parse(strXml);
+     tests.forEach((t){
+       doc.rootElement.children.where((x) => x is xml.XmlElement).forEach((xml.XmlElement e) async {
+         if(t==e.getAttribute('name')) {
+             var file = e.getAttribute('file');
+             strXml = await new File('${contentRootPath}$file').readAsString();
+             print('${contentRootPath}$file = $strXml');
+         }
+       });
+     });
+
      //var document = xml.parse(temp);
      return null;
    }

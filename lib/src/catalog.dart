@@ -4,9 +4,10 @@ import 'package:xml/xml.dart' as xml;
 
 class TestItem {
   String name;
+  String description;
   String query;
   String input;
-  TestItem(this.name,this.query,[this.input]){}
+  TestItem(this.name, this.description, this.query,{this.input}){}
 }
 
 class Catalog {
@@ -44,29 +45,58 @@ class Catalog {
        doc.rootElement.children.where((x) => x is xml.XmlElement).forEach((xml.XmlElement e) async {
          if(t==e.getAttribute('name')) {
              var file = e.getAttribute('file');
+             print(file);
              strXml = await new File('${contentRootPath}$file').readAsString();
              print('${contentRootPath}$file = $strXml');
-             var testCaseDoc = xml.parse(strXml);
-             testCaseDoc.rootElement.children
-                 .where((x) => x is xml.XmlElement && x.name == 'test-case')
-                 .forEach((xml.XmlElement e) async {
-                    var name = e.getAttribute('name');
-                    xml.XmlElement query = getElementByName(e,'test');
-                    var strQuery = query.text;
-                    xml.XmlElement env = getElementByName(e,'environment');
-                    if(env!=null){ //get the source doc
-                      var ref = env.getAttribute('ref');
-                      var strEnv = await new File('${contentRootPath}docs/${ref}.xml').readAsString();
-                      if(strEnv!=null){
-                        this.testQueue[name] = new TestItem(name,strQuery,strEnv);
-                        //print('$name ... $strQuery ... $strEnv');
-                      }
-                      else {
-                        this.testQueue[name] = new TestItem(name,strQuery);
-                        print('$name ... $strQuery');
-                      }
-                    }
-                 });
+             if(strXml!=null && strXml!='') {
+               var testCaseDoc = xml.parse(strXml);
+               testCaseDoc.rootElement.children
+                   .where((x) =>
+               x is xml.XmlElement && x.name.local == 'test-case')
+                   .forEach((xml.XmlElement e) async {
+                 var name = e.getAttribute('name');
+                 xml.XmlElement query = getElementByName(e, 'test');
+                 var strQuery;
+                 if (query != null) {
+                   strQuery = query.text;
+                 }
+                 xml.XmlElement description = getElementByName(e, 'description');
+                 var strDescription;
+                 if(description!=null){
+                   strDescription = description.text;
+                 }
+                 xml.XmlElement env = getElementByName(e, 'environment');
+                 if (env != null) { //get the source doc
+                   var ref = env.getAttribute('ref');
+                   var strEnv;
+                   try {
+                     strEnv = await new File(
+                         '${contentRootPath}docs/${ref}.xml').readAsString();
+                   }
+                   catch (ex){
+                     var envSource = env.findElements('source');
+                     if(envSource!= null && envSource.length > 0){
+                       try {
+                         ref = envSource[0].getAttribute("file");
+                         strEnv = await new File(
+                             '${contentRootPath}prod/${ref}').readAsString();
+                       }
+                       catch (ex){
+                         print('error reading environment file (2): $ex');
+                       }
+                     }
+                     //strEnv = await new File(                         '${contentRootPath}/${ref}.xml').readAsString();
+                   }
+                   if (strEnv != null) {
+                     this.testQueue[name] =
+                     new TestItem(name, strDescription, strQuery, input: strEnv);
+                   }
+                   else {
+                     this.testQueue[name] = new TestItem(name, strDescription, strQuery);
+                   }
+                 }
+               });
+             }
          }
        });
      });
@@ -77,8 +107,8 @@ class Catalog {
 
    xml.XmlElement getElementByName(xml.XmlElement parent, String name) {
      xml.XmlElement result = parent.children
-         .firstWhere((y)=>y is xml.XmlElement && y.name == name,
-         orElse: null);
+         .firstWhere((y)=>y is xml.XmlElement && y.name.local == name,
+         orElse:() => null);
      return result;
 
    }

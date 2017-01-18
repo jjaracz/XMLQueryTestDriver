@@ -8,7 +8,9 @@ enum ResultType {
   ASSERT_STRING,
   ASSERT_EQ,
   ASSERT_TRUE,
-  ASSERT_FALSE
+  ASSERT_FALSE,
+  ASSERT_EMPTY,
+  ASSERT_COUNT
 }
 
 class ResultItem {
@@ -20,10 +22,11 @@ class ResultItem {
 class TestItem {
   String name;
   String description;
+  String author;
   String query;
   String input;
   List<ResultItem> result = [];
-  TestItem(this.name, this.description, this.query,{this.input}){}
+  TestItem(this.name, this.description, this.query,{this.input,this.author}){}
 }
 
 class Catalog {
@@ -80,6 +83,13 @@ class Catalog {
                    strQuery = query.text;
                  }
 
+                 //author
+                 xml.XmlElement author = getElementByName(e, 'created');
+                 var strAuthor;
+                 if(author!=null){
+                   strAuthor = author.getAttribute('by');
+                 }
+
                  //description
                  xml.XmlElement description = getElementByName(e, 'description');
                  var strDescription;
@@ -111,11 +121,11 @@ class Catalog {
                    }
                    if (strEnv != null) {
                      this.testQueue[name] =
-                     new TestItem(name, strDescription, strQuery, input: strEnv);
+                     new TestItem(name, strDescription, strQuery, author:strAuthor, input: strEnv);
                    }
                  }
                  else {
-                   this.testQueue[name] = new TestItem(name, strDescription, strQuery);
+                   this.testQueue[name] = new TestItem(name, strDescription, strQuery, author:strAuthor);
                  }
 
                  //result
@@ -124,49 +134,16 @@ class Catalog {
                    xml.XmlElement any = getElementByName(res,'any-of');
                    if(any != null){ //more than one result
                      any.children.where((x)=>x is xml.XmlElement).forEach((xml.XmlElement x){
-                       switch(x.name.local){
-                         case 'assert-true':
-                           this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_TRUE,null));
-                           break;
-                         case 'assert-false':
-                           this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_FALSE,null));
-                           break;
-                         case 'error':
-                           this.testQueue[name].result.add(new ResultItem(ResultType.ERROR,x.getAttribute('code')));
-                           break;
-                         case 'assert-xml':
-                           this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_XML,x.text));
-                           break;
-                         case 'assert-string-value':
-                           this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_STRING,x.text));
-                           break;
-                       }
+                       switchResultType(x, name);
                      });
                    }
                    else { //one result
                      xml.XmlElement resElem = res.children.firstWhere((x)=>x is xml.XmlElement,orElse:()=>null);
                      if(resElem!=null){
-                       switch(resElem.name.local){
-                         case 'assert-true':
-                           this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_TRUE,null));
-                           break;
-                         case 'assert-false':
-                           this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_FALSE,null));
-                           break;
-                         case 'error':
-                           this.testQueue[name].result.add(new ResultItem(ResultType.ERROR,resElem.getAttribute('code')));
-                           break;
-                         case 'assert-xml':
-                           this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_XML,resElem.text));
-                           break;
-                         case 'assert-string-value':
-                           this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_STRING,resElem.text));
-                           break;
-                       }
+                       switchResultType(resElem, name);
                      }
                    }
                  }
-
                });
              }
          }
@@ -176,12 +153,40 @@ class Catalog {
      return null;
    }
 
+   void switchResultType(xml.XmlElement x, String name) {
+     switch(x.name.local){
+       case 'assert-true':
+         this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_TRUE,null));
+         break;
+       case 'assert-false':
+         this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_FALSE,null));
+         break;
+       case 'error':
+         this.testQueue[name].result.add(new ResultItem(ResultType.ERROR,x.getAttribute('code')));
+         break;
+       case 'assert-xml':
+         this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_XML,x.text));
+         break;
+       case 'assert-string-value':
+         this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_STRING,x.text));
+         break;
+       case 'assert-empty':
+         this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_EMPTY,null));
+         break;
+       case 'assert-count':
+         this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_COUNT,x.text));
+         break;
+       case 'assert-eq':
+         this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_EQ,x.text));
+         break;
+     }
+   }
+
    xml.XmlElement getElementByName(xml.XmlElement parent, String name) {
      xml.XmlElement result = parent.children
          .firstWhere((y)=>y is xml.XmlElement && y.name.local == name,
          orElse:() => null);
      return result;
-
    }
 
 }

@@ -56,49 +56,57 @@ class Catalog {
 
    }
 
-   Future printTestCases() async {
-
-     var strXml = await new File('${contentRootPath}catalog.xml').readAsString();
-     var doc = xml.parse(strXml);
-     tests.forEach((t){
-       var name;
-       doc.rootElement.children.where((x) => x is xml.XmlElement).forEach((xml.XmlElement e) async {
-         if(t==e.getAttribute('name')) {
+   Future buildTestCases() async {
+     Completer completer = new Completer();
+       var strXml = await new File('${contentRootPath}catalog.xml')
+           .readAsString();
+       var doc = xml.parse(strXml);
+       var lastSet;
+       var lastTest;
+       tests.forEach((t) async {
+         var name;
+         lastSet = doc.rootElement.children.where((x) => x is xml.XmlElement).last.getAttribute("name");
+         doc.rootElement.children.where((x) => x is xml.XmlElement).forEach((
+             xml.XmlElement e) async {
+           if (t==e.getAttribute('name')) {
              var file = e.getAttribute('file');
+             if (file == null) return null;
              print(file);
              strXml = await new File('${contentRootPath}$file').readAsString();
-             print('${contentRootPath}$file = $strXml');
-             if(strXml!=null && strXml!='') {
+             //print('${contentRootPath}$file = $strXml');
+             if (strXml != null && strXml != '') {
                var testCaseDoc = xml.parse(strXml);
+               lastTest = testCaseDoc.rootElement.children.where((x) => x is xml.XmlElement && x.name.local == 'test-case').last.getAttribute("name");
                testCaseDoc.rootElement.children
                    .where((x) =>
                x is xml.XmlElement && x.name.local == 'test-case')
-                   .forEach((xml.XmlElement e) async {
-                 name = e.getAttribute('name');
+                   .forEach((xml.XmlElement y) async {
+                 name = y.getAttribute('name');
 
                  //test
-                 xml.XmlElement query = getElementByName(e, 'test');
+                 xml.XmlElement query = getElementByName(y, 'test');
                  var strQuery;
                  if (query != null) {
                    strQuery = query.text;
                  }
 
                  //author
-                 xml.XmlElement author = getElementByName(e, 'created');
+                 xml.XmlElement author = getElementByName(y, 'created');
                  var strAuthor;
-                 if(author!=null){
+                 if (author != null) {
                    strAuthor = author.getAttribute('by');
                  }
 
                  //description
-                 xml.XmlElement description = getElementByName(e, 'description');
+                 xml.XmlElement description = getElementByName(
+                     y, 'description');
                  var strDescription;
-                 if(description!=null){
+                 if (description != null) {
                    strDescription = description.text;
                  }
 
                  //environment
-                 xml.XmlElement env = getElementByName(e, 'environment');
+                 xml.XmlElement env = getElementByName(y, 'environment');
                  if (env != null) { //get the source doc
                    var ref = env.getAttribute('ref');
                    var strEnv;
@@ -106,54 +114,71 @@ class Catalog {
                      strEnv = await new File(
                          '${contentRootPath}docs/${ref}.xml').readAsString();
                    }
-                   catch (ex){
+                   catch (ex) {
                      var envSource = env.findElements('source');
-                     if(envSource!= null && envSource.length > 0){
+                     if (envSource != null && envSource.length > 0) {
                        try {
                          ref = envSource[0].getAttribute("file");
                          strEnv = await new File(
                              '${contentRootPath}prod/${ref}').readAsString();
                        }
-                       catch (ex){
+                       catch (ex) {
                          print('error reading environment file (2): $ex');
                        }
                      }
                    }
                    if (strEnv != null) {
                      this.testQueue[name] =
-                     new TestItem(name, strDescription, strQuery, author:strAuthor, input: strEnv);
+                     new TestItem(
+                         name, strDescription, strQuery, author: strAuthor,
+                         input: strEnv);
                    }
                  }
                  else {
-                   this.testQueue[name] = new TestItem(name, strDescription, strQuery, author:strAuthor);
+                   this.testQueue[name] = new TestItem(
+                       name, strDescription, strQuery, author: strAuthor);
                  }
 
                  //result
-                 xml.XmlElement res = getElementByName(e, 'result');
+                 xml.XmlElement res = getElementByName(y, 'result');
                  if (res != null) {
-                   xml.XmlElement any = getElementByName(res,'any-of');
-                   if(any != null){ //more than one result
-                     any.children.where((x)=>x is xml.XmlElement).forEach((xml.XmlElement x){
+                   xml.XmlElement any = getElementByName(res, 'any-of');
+                   if (any != null) { //more than one result
+                     any.children.where((x) => x is xml.XmlElement).forEach((
+                         xml.XmlElement x) {
                        switchResultType(x, name);
                      });
                    }
                    else { //one result
-                     xml.XmlElement resElem = res.children.firstWhere((x)=>x is xml.XmlElement,orElse:()=>null);
-                     if(resElem!=null){
+                     xml.XmlElement resElem = res.children.firstWhere((
+                         x) => x is xml.XmlElement, orElse: () => null);
+                     if (resElem != null) {
                        switchResultType(resElem, name);
                      }
                    }
                  }
+                 print('${e.getAttribute("name")} ... $lastSet && ${y.getAttribute("name")} ... $lastTest');
+                 if(e.getAttribute("name")==lastSet && y.getAttribute("name")==lastTest) {
+                   print("XXX");
+                   completer.complete(this);
+                 }
+
                });
              }
-         }
-       });
-     });
+           }
 
-     return null;
+
+         });
+
+       });
+     return completer.future;
    }
 
    void switchResultType(xml.XmlElement x, String name) {
+     if(this.testQueue[name]==null) {
+       print("Error: Missing test = $name");
+       return;
+     }
      switch(x.name.local){
        case 'assert-true':
          this.testQueue[name].result.add(new ResultItem(ResultType.ASSERT_TRUE,null));

@@ -8,6 +8,12 @@ main() async {
   awesome.setup('asdf');
   await awesome.buildTestCases();
   print('in main call back:${awesome.testQueue.length}');
-  awesome.testQueue.values.forEach((t)=>print('Test= ${t.name} ${t.query}'));
+  //var i = 0;
+  //awesome.testQueue.values.forEach((t)=>print('Test= ${t.name} ${t.query} ${t.author} ${t.description} ${t.input} ${++i}'));
+  awesome.testQueue.forEach((k,v)=> print(awesome.executeTest(v,doXPath)));
 
+}
+
+String doXPath(String xpath, String src){
+  return '$xpath $src';
 }

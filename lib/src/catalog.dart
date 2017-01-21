@@ -21,12 +21,13 @@ class ResultItem {
 
 class TestItem {
   String name;
+  String set;
   String description;
   String author;
   String query;
   String input;
   List<ResultItem> result = [];
-  TestItem(this.name, this.description, this.query,
+  TestItem(this.name, this.set, this.description, this.query,
       {this.input, this.author}) {}
 }
 
@@ -43,6 +44,7 @@ class Catalog {
                       <set>prod-AxisStep</set>
                       <set>prod-AxisStep.ancestor</set>
                       <set>prod-AxisStep.following</set>
+                      <set>op-node-after</set>
                    </tests>''';
     var doc = xml.parse(temp);
     doc.rootElement.children
@@ -72,8 +74,8 @@ class Catalog {
     Completer completer = new Completer();
     var count = tests.length;
     var i = 0;
-    tests.forEach((t) async {
-      await processSet(doc, t, strXml);
+    tests.forEach((set) async {
+      await processSet(doc, set, strXml);
       if(++i == count){
          completer.complete(null);
       }
@@ -81,12 +83,12 @@ class Catalog {
     return completer.future;
   }
 
-  Future processSet(xml.XmlDocument doc, String t, strXml) async {
+  Future processSet(xml.XmlDocument doc, String set, strXml) async {
     Completer completer = new Completer();
     doc.rootElement.children
         .where((x) => x is xml.XmlElement)
         .forEach((xml.XmlElement e) async {
-      if (t == e.getAttribute('name')) {
+      if (set == e.getAttribute('name')) {
         var file = e.getAttribute('file');
         if (file == null) return null;
         strXml = await new File('${contentRootPath}$file').readAsString();
@@ -101,7 +103,7 @@ class Catalog {
               .where((x) => x is xml.XmlElement && x.name.local == 'test-case')
               .forEach((xml.XmlElement y) async {
                  var name = y.getAttribute('name');
-                 await processTest(y, name);
+                 await processTest(y, name, set);
                  if(++i == count){
                    completer.complete(null);
                  }
@@ -112,7 +114,7 @@ class Catalog {
     return completer.future;
   }
 
-  Future processTest(xml.XmlElement y, String name) async {
+  Future processTest(xml.XmlElement y, String name, String set) async {
 
     Completer completer = new Completer();
     xml.XmlElement query = getElementByName(y, 'test');
@@ -133,28 +135,6 @@ class Catalog {
     var strDescription;
     if (description != null) {
       strDescription = description.text;
-    }
-
-    //result
-    xml.XmlElement res = getElementByName(y, 'result');
-    if (res != null) {
-      xml.XmlElement any = getElementByName(res, 'any-of');
-      if (any != null) {
-        //more than one result
-        any.children
-            .where((x) => x is xml.XmlElement)
-            .forEach((xml.XmlElement x) {
-          switchResultType(x, name);
-        });
-      } else {
-        //one result
-        xml.XmlElement resElem = res.children.firstWhere(
-                (x) => x is xml.XmlElement,
-            orElse: () => null);
-        if (resElem != null) {
-          switchResultType(resElem, name);
-        }
-      }
     }
 
     //environment
@@ -178,24 +158,43 @@ class Catalog {
       }
       if (strEnv != null) {
         this.testQueue[name] = new TestItem(
-            name, strDescription, strQuery,
+            name, set, strDescription, strQuery,
             author: strAuthor, input: strEnv);
-        completer.complete(null);
       }
     } else {
       this.testQueue[name] = new TestItem(
-          name, strDescription, strQuery,
+          name, set, strDescription, strQuery,
           author: strAuthor);
-      completer.complete(null);
     }
 
-    if(this.testQueue[name]==null) completer.complete(null);
+    //result
+    xml.XmlElement res = getElementByName(y, 'result');
+    if (res != null) {
+      xml.XmlElement any = getElementByName(res, 'any-of');
+      if (any != null) {
+        //more than one accepted result
+        any.children
+            .where((x) => x is xml.XmlElement)
+            .forEach((xml.XmlElement x) {
+          switchResultType(x, name);
+        });
+      } else {
+        //one result
+        xml.XmlElement resElem = res.children.firstWhere(
+                (x) => x is xml.XmlElement,
+            orElse: () => null);
+        if (resElem != null) {
+          switchResultType(resElem, name);
+        }
+      }
+    }
+
+    completer.complete(null);
     return completer.future;
   }
 
   void switchResultType(xml.XmlElement x, String name) {
     if (this.testQueue[name] == null) {
-      print("Error: Missing test = $name");
       return;
     }
     switch (x.name.local) {
@@ -256,4 +255,20 @@ class Catalog {
         orElse: () => null);
     return result;
   }
+
+  String executeTest(TestItem test, dynamic doXMLQuery(query, input)){
+    String result = 'false';
+    test.result.forEach((r){
+      switch(r.type){
+        case ResultType.ASSERT_EQ:
+         if(r.value == doXMLQuery(test.query,test.input)) result = 'tested true OK';
+         else result = 'tested false';
+         break;
+        default: result = 'test result type not supported';
+      }
+    });
+    return  "${test.set}?${test.name} ran with result => $result";
+  }
+
+
 }

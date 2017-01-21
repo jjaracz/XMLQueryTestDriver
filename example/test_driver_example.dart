@@ -5,7 +5,7 @@ import 'package:xml_query_test_driver/xml_query_test_driver.dart';
 
 main() async {
   var awesome = new Catalog();
-  awesome.setup('asdf');
+  awesome.setup('example/testlist.xml');
   await awesome.buildTestCases();
   print('in main call back:${awesome.testQueue.length}');
   //var i = 0;
@@ -14,6 +14,7 @@ main() async {
 
 }
 
+///test stub only replace this call with the implementation eval call
 String doXPath(String xpath, String src){
   return '$xpath $src';
 }

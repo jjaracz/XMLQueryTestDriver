@@ -39,14 +39,9 @@ class Catalog {
 
   ///xml list of required tests in the form of
   ///<tests><set>[set name]</set>...</tests>
-  void setup(path) {
-    var temp = '''<tests>
-                      <set>prod-AxisStep</set>
-                      <set>prod-AxisStep.ancestor</set>
-                      <set>prod-AxisStep.following</set>
-                      <set>op-node-after</set>
-                   </tests>''';
-    var doc = xml.parse(temp);
+  dynamic setup(path) async {
+    var strXml = await new File('$path').readAsString();
+    var doc = xml.parse(strXml);
     doc.rootElement.children
         .where((x) => x is xml.XmlElement)
         .forEach((xml.XmlElement e) {
@@ -57,6 +52,7 @@ class Catalog {
     //1. get the line in the catalog
     //2. get the source file
     tests.forEach((s) => print(s));
+    return null;
   }
 
   Future buildTestCases() async {
@@ -258,7 +254,9 @@ class Catalog {
 
   String executeTest(TestItem test, dynamic doXMLQuery(query, input)){
     String result = 'false';
+    int count = 0;
     test.result.forEach((r){
+      count++;
       switch(r.type){
         case ResultType.ASSERT_EQ:
          if(r.value == doXMLQuery(test.query,test.input)) result = 'tested true OK';
@@ -267,7 +265,8 @@ class Catalog {
         default: result = 'test result type not supported';
       }
     });
-    return  "${test.set}?${test.name} ran with result => $result";
+    if(count == 0) result = 'no query result provided';
+    return  '${test.set}?${test.name} ran with result => $result';
   }
 
 

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="us-ascii"?>
+<test-set xmlns="http://www.w3.org/2010/09/qt-fots-catalog" name="misc-simple">
+   <description>Simple tests xpath development</description>
+   <test-case name="simple-1">
+      <description> Evaluate error condition XPST0001 </description>
+      <created by="Peter Schonefeld" on="2017-01-21"/>
+      <test><![CDATA[declare namespace test = 'http://www.example.com';
+        <a/> instance of element(*, test:unknownType)]]></test>
+      <result>
+         <error code="XPST0008"/>
+      </result>
+   </test-case>
+</test-set>

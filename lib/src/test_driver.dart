@@ -1,37 +1,12 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:xml/xml.dart' as xml;
+import 'result_item.dart';
+import 'result_type.dart';
+import 'test_item.dart';
 
-enum ResultType {
-  ERROR,
-  ASSERT_XML,
-  ASSERT_STRING,
-  ASSERT_EQ,
-  ASSERT_TRUE,
-  ASSERT_FALSE,
-  ASSERT_EMPTY,
-  ASSERT_COUNT
-}
 
-class ResultItem {
-  ResultType type;
-  String value;
-  ResultItem(this.type, this.value);
-}
-
-class TestItem {
-  String name;
-  String set;
-  String description;
-  String author;
-  String query;
-  String input;
-  List<ResultItem> result = [];
-  TestItem(this.name, this.set, this.description, this.query,
-      {this.input, this.author}) {}
-}
-
-class Catalog {
+class TestDriver {
   List<String> tests = [];
   Map<String, TestItem> testQueue = {};
 

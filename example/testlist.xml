@@ -1,6 +1,4 @@
 <tests>
     <set>prod-AxisStep</set>
-    <set>prod-AxisStep.ancestor</set>
-    <set>prod-AxisStep.following</set>
-    <set>op-node-after</set>
+    <set>misc-simple</set>
 </tests>

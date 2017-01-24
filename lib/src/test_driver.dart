@@ -60,6 +60,7 @@ class TestDriver {
         .where((x) => x is xml.XmlElement)
         .forEach((xml.XmlElement e) async {
       if (set == e.getAttribute('name')) {
+        //print('${e.name.local} ${e.getAttribute('name')}');
         var file = e.getAttribute('file');
         if (file == null) return null;
         strXml = await new File('${contentRootPath}$file').readAsString();
@@ -75,7 +76,7 @@ class TestDriver {
               .forEach((xml.XmlElement y) async {
                  var name = y.getAttribute('name');
                  await processTest(y, name, set);
-                 if(++i == count){
+                 if(++i == count && !(completer.isCompleted)){
                    completer.complete(null);
                  }
               });
@@ -227,7 +228,7 @@ class TestDriver {
     return result;
   }
 
-  String executeTest(TestItem test, dynamic doXMLQuery(query, input)){
+  String executeTest(TestItem test, doXMLQuery(query, input)){
     String result = 'false';
     int count = 0;
     test.result.forEach((r){

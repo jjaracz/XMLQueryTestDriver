@@ -10,7 +10,10 @@ class TestDriver {
   List<String> tests = [];
   Map<String, TestItem> testQueue = {};
 
-  var contentRootPath = 'res/qt3_1_0/';
+  var contentRootPath = 'lib/res/qt3_1_0/';
+
+  TestDriver();
+  TestDriver.resources(String this.contentRootPath);
 
   ///xml list of required tests in the form of
   ///<tests><set>[set name]</set>...</tests>

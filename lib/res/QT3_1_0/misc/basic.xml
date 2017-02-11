@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="us-ascii"?>
+<test-set xmlns="http://www.w3.org/2010/09/qt-fots-catalog" name="misc-simple">
+    <description>Simple tests xpath development</description>
+    <environment name="simple">
+        <source role="." file="simple.xml">
+            <description>document for testing basic xpath ... error thrown if not supported</description>
+            <created by="Peter Schonefeld" on="2005-11-27"/>
+        </source>
+    </environment>
+    <test-case name="simple-1">
+        <description>document root</description>
+        <created by="Peter Schonefeld" on="2017-01-21"/>
+
+        <test><![CDATA[/]]></test>
+        <result>
+            <any-of>
+                <assert-xml><![CDATA[<data>
+    <person id="1" name="sally">
+        <address>2 My Ave, Townsville</address>
+        <age>20</age>
+    </person>
+    <person id="2" name="bob">
+        <address>100 Some Str, Someplace</address>
+        <age>30</age>
+    </person>
+    <person id="3" name="jane">
+        <address>101 Test Drv, SomeplaceElse</address>
+        <age>40</age>
+    </person>
+</data>]]></assert-xml>
+                <error code="XPST0010"/>
+            </any-of>
+        </result>
+    </test-case>
+</test-set>

@@ -13,6 +13,7 @@ class TestDriver {
   var contentRootPath = 'lib/res/qt3_1_0/';
 
   TestDriver();
+  //TODO: make res folder accessible from another library where this lib is a dependency
   TestDriver.resources(String this.contentRootPath);
 
   ///xml list of required tests in the form of

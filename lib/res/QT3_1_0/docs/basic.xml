@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<data>
+    <person id="1" name="sally">
+        <address>2 My Ave, Townsville</address>
+        <age>20</age>
+    </person>
+    <person id="2" name="bob">
+        <address>100 Some Str, Someplace</address>
+        <age>30</age>
+    </person>
+    <person id="3" name="jane">
+        <address>101 Test Drv, SomeplaceElse</address>
+        <age>40</age>
+    </person>
+</data>

@@ -532,6 +532,6 @@
    <test-set name="app-XMark"                           file="app/XMark.xml"/>
 
     <!-- DEV CASES -->
-    <test-set name="misc-simple"                           file="misc/simple.xml"/>
+    <test-set name="basic-xpath"                           file="misc/basic.xml"/>
 
 </catalog>
